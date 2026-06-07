@@ -1,47 +1,48 @@
-use std::{
-    io::{BufRead, BufReader, Write},
-    net::TcpListener,
-    thread,
-};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
 
-use anyhow::{Error, Result};
+use anyhow::Result;
 
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<()> {
     println!("Starting sort-of Redis.");
 
-    let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:6379").await?;
 
-    for stream in listener.incoming() {
+    loop {
+        let stream = listener.accept().await;
+
         match stream {
-            Ok(stream) => {
+            Ok((stream, _)) => {
                 println!("accepted new connection");
 
-                thread::spawn(move || -> Result<(), Error> { handle_stream(stream) });
+                tokio::spawn(handle_stream(stream));
             }
             Err(e) => {
                 println!("error: {}", e);
             }
         }
     }
-
-    Ok(())
 }
 
-fn handle_stream(stream: std::net::TcpStream) -> Result<(), Error> {
-    let mut writer = stream.try_clone()?;
-    let reader = BufReader::new(&stream);
-    Ok(for line in reader.lines() {
-        match line {
-            Ok(line) => {
-                // println!("Got: {}", line);
-                if line == "PING" {
-                    let _ = writer.write_all("+PONG\r\n".as_bytes());
-                    let _ = writer.flush();
-                }
-            }
-            Err(_) => {
-                println!("End of stream.");
-            }
+async fn handle_stream(mut stream: TcpStream) -> Result<()> {
+    // let mut writer = stream.try_clone()?;
+    // let reader = BufReader::new(&stream);
+
+    loop {
+        let mut buf = [0; 2048];
+
+        let bytes_read = stream.read(&mut buf).await?;
+
+        if bytes_read == 0 {
+            println!("Connection closed by client");
+            break;
         }
-    })
+
+        if &buf[..bytes_read] == b"*1\r\n$4\r\nPING\r\n" {
+            stream.write_all("+PONG\r\n".as_bytes()).await?;
+        }
+    }
+
+    Ok(())
 }

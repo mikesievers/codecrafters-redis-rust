@@ -15,23 +15,7 @@ fn main() -> Result<(), Error> {
             Ok(stream) => {
                 println!("accepted new connection");
 
-                let mut writer = stream.try_clone()?;
-                let reader = BufReader::new(&stream);
-
-                for line in reader.lines() {
-                    match line {
-                        Ok(line) => {
-                            println!("Got: {}", line);
-                            if line == "PING" {
-                                let _ = writer.write_all("+PONG\r\n".as_bytes());
-                                let _ = writer.flush();
-                            }
-                        }
-                        Err(_) => {
-                            println!("End of stream.");
-                        }
-                    }
-                }
+                handle_stream(stream)?;
             }
             Err(e) => {
                 println!("error: {}", e);
@@ -40,4 +24,23 @@ fn main() -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+fn handle_stream(stream: std::net::TcpStream) -> Result<(), Error> {
+    let mut writer = stream.try_clone()?;
+    let reader = BufReader::new(&stream);
+    Ok(for line in reader.lines() {
+        match line {
+            Ok(line) => {
+                // println!("Got: {}", line);
+                if line == "PING" {
+                    let _ = writer.write_all("+PONG\r\n".as_bytes());
+                    let _ = writer.flush();
+                }
+            }
+            Err(_) => {
+                println!("End of stream.");
+            }
+        }
+    })
 }

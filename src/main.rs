@@ -22,6 +22,7 @@ fn main() -> Result<(), Error> {
                     match line {
                         Ok(_) => {
                             let _ = writer.write_all("+PONG\r\n".as_bytes());
+                            let _ = writer.flush();
                         }
                         Err(_) => {
                             println!("End of stream.");

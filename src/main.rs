@@ -20,9 +20,12 @@ fn main() -> Result<(), Error> {
 
                 for line in reader.lines() {
                     match line {
-                        Ok(_) => {
-                            let _ = writer.write_all("+PONG\r\n".as_bytes());
-                            let _ = writer.flush();
+                        Ok(line) => {
+                            println!("Got: {}", line);
+                            if line == "PING" {
+                                let _ = writer.write_all("+PONG\r\n".as_bytes());
+                                let _ = writer.flush();
+                            }
                         }
                         Err(_) => {
                             println!("End of stream.");

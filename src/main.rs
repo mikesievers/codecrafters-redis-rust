@@ -1,6 +1,7 @@
 use std::{
     io::{BufRead, BufReader, Write},
     net::TcpListener,
+    thread,
 };
 
 use anyhow::{Error, Result};
@@ -15,7 +16,7 @@ fn main() -> Result<(), Error> {
             Ok(stream) => {
                 println!("accepted new connection");
 
-                handle_stream(stream)?;
+                thread::spawn(move || -> Result<(), Error> { handle_stream(stream) });
             }
             Err(e) => {
                 println!("error: {}", e);

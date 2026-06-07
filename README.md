@@ -1,7 +1,6 @@
-[![progress-banner](https://backend.codecrafters.io/progress/redis/2ce965b7-29c6-49aa-96e2-0207e00f6247)](https://app.codecrafters.io/users/mikesievers?r=2qF)
+This is an implementation of the ["Build Your Own Redis" Challenge](https://codecrafters.io/challenges/redis).
 
-This is a starting point for Rust solutions to the
-["Build Your Own Redis" Challenge](https://codecrafters.io/challenges/redis).
+[![progress-banner](https://backend.codecrafters.io/progress/redis/2ce965b7-29c6-49aa-96e2-0207e00f6247)](https://app.codecrafters.io/users/mikesievers?r=2qF)
 
 In this challenge, you'll build a toy Redis clone that's capable of handling
 basic commands like `PING`, `SET` and `GET`. Along the way we'll learn about

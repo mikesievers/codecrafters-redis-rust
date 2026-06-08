@@ -32,6 +32,8 @@ async fn handle_stream(mut stream: TcpStream) -> Result<()> {
     loop {
         let mut buf = [0; 2048];
 
+        // TODO: Improve by using a parser combinator like nom.
+        // Article for inspiration: https://dpbriggs.ca/blog/Implementing-A-Copyless-Redis-Protocol-in-Rust-With-Parsing-Combinators/
         let bytes_read = stream.read(&mut buf).await?;
 
         if bytes_read == 0 {

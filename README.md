@@ -2,6 +2,18 @@ This is an implementation of the ["Build Your Own Redis" Challenge](https://code
 
 [![progress-banner](https://backend.codecrafters.io/progress/redis/2ce965b7-29c6-49aa-96e2-0207e00f6247)](https://app.codecrafters.io/users/mikesievers?r=2qF)
 
+# Sources
+The following sources have been useful in the project
+
+## RESP protocol parsing
+- Sample RESP parser from redis-oxide: https://dpbriggs.ca/blog/Implementing-A-Copyless-Redis-Protocol-in-Rust-With-Parsing-Combinators/
+- Tokio docs https://tokio.rs/
+  - especially tutorial https://tokio.rs/tokio/tutorial
+  - Framing (with Redis example) https://tokio.rs/tokio/tutorial/framing
+
+
+# From original project
+
 In this challenge, you'll build a toy Redis clone that's capable of handling
 basic commands like `PING`, `SET` and `GET`. Along the way we'll learn about
 event loops, the Redis protocol and more.

@@ -6,6 +6,7 @@ This is an implementation of the ["Build Your Own Redis" Challenge](https://code
 The following sources have been useful in the project
 
 ## RESP protocol parsing
+- Redis protocol spec: https://redis.io/docs/latest/develop/reference/protocol-spec/
 - Sample RESP parser from redis-oxide: https://dpbriggs.ca/blog/Implementing-A-Copyless-Redis-Protocol-in-Rust-With-Parsing-Combinators/
 - Tokio docs https://tokio.rs/
   - especially tutorial https://tokio.rs/tokio/tutorial

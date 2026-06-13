@@ -14,6 +14,7 @@
 	// ]
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
+	"onCreateCommand": "apt update && apt install -y telnet",
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.

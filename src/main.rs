@@ -5,6 +5,16 @@ use anyhow::Result;
 
 mod parser;
 
+#[derive(Debug, PartialEq)]
+enum Resp {
+    Simple(String),
+    Error(String),
+    Int(i64),
+    Array(Vec<Resp>),
+    NullArray,
+    NullBulkString,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("Starting sort-of Redis.");

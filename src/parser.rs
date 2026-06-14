@@ -1,6 +1,6 @@
 use nom::Parser;
 use nom::branch::alt;
-use nom::bytes::streaming::{tag, take_until};
+use nom::bytes::streaming::{tag, take, take_until};
 use nom::{self, IResult};
 
 use crate::Resp;
@@ -30,19 +30,26 @@ fn parse_simple(i: &[u8]) -> IResult<&[u8], Resp> {
     let (i, _) = tag("+")(i)?;
     let (i, s) = take_until("\r\n")(i)?;
     let (i, _) = crlf(i)?;
-    Ok((i, Resp::Simple(String::from_utf8_lossy(s).into())))
+    Ok((i, Resp::String(String::from_utf8_lossy(s).into())))
+}
+
+fn parse_bulk_string(i: &[u8]) -> IResult<&[u8], Resp> {
+    let (i, _) = tag("$")(i)?;
+    let (i, n) = parse_number(i)?;
+    let (i, s) = take(n as usize)(i)?;
+    let (i, _) = crlf(i)?;
+    Ok((i, Resp::String(String::from_utf8_lossy(s).into())))
 }
 
 fn parse_error(i: &[u8]) -> IResult<&[u8], Resp> {
     let (i, _) = tag("-")(i)?;
     let (i, s) = take_until("\r\n")(i)?;
     let (i, _) = crlf(i)?;
-    Ok((i, Resp::Simple(String::from_utf8_lossy(s).into())))
+    Ok((i, Resp::String(String::from_utf8_lossy(s).into())))
 }
 
 fn parse_resp(i: &[u8]) -> IResult<&[u8], Resp> {
-    alt((parse_simple, parse_integer, parse_error)).parse(i)
-    // parse_simple(i).or_else(|_| parse_integer(i))
+    alt((parse_simple, parse_bulk_string, parse_integer, parse_error)).parse(i)
 }
 
 #[cfg(test)]
@@ -58,15 +65,20 @@ mod tests {
 
         // Simple String
         let simple_sample = "Some String";
+        let (_, result) = parse_resp(format!("+{}\r\n", simple_sample).as_bytes()).unwrap();
+        assert_eq!(result, Resp::String(simple_sample.into()));
+
+        // Bulk String
         let (_, result) =
-            parse_resp(format!("{}{}{}", "+", simple_sample, "\r\n").as_bytes()).unwrap();
-        assert_eq!(result, Resp::Simple(simple_sample.into()));
+            parse_resp(format!("${}\r\n{}\r\n", simple_sample.len(), simple_sample).as_bytes())
+                .unwrap();
+        assert_eq!(result, Resp::String(simple_sample.into()));
 
         // Error
         let error_sample = "All is broken";
         let (_, result) =
             parse_resp(format!("{}{}{}", "-", error_sample, "\r\n").as_bytes()).unwrap();
-        assert_eq!(result, Resp::Simple(error_sample.into()));
+        assert_eq!(result, Resp::String(error_sample.into()));
     }
 
     #[test]

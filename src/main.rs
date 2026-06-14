@@ -7,7 +7,7 @@ mod parser;
 
 #[derive(Debug, PartialEq)]
 enum Resp {
-    Simple(String),
+    String(String),
     Error(String),
     Int(i64),
     Array(Vec<Resp>),

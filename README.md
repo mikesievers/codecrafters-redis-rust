@@ -5,6 +5,12 @@ This is an implementation of the ["Build Your Own Redis" Challenge](https://code
 # Sources
 The following sources have been useful in the project
 
+# Next steps
+- Implement RESP parsers on top of BytsMut
+  - Test driven
+  - Use nom to parse
+- Implement the tokio Decoder trait for this parser
+
 ## RESP protocol parsing
 - Redis protocol spec: https://redis.io/docs/latest/develop/reference/protocol-spec/
 - Sample RESP parser from redis-oxide: https://dpbriggs.ca/blog/Implementing-A-Copyless-Redis-Protocol-in-Rust-With-Parsing-Combinators/

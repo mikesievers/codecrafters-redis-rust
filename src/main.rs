@@ -3,6 +3,8 @@ use tokio::net::{TcpListener, TcpStream};
 
 use anyhow::Result;
 
+mod parser;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("Starting sort-of Redis.");

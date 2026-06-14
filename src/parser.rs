@@ -1,3 +1,4 @@
+use nom::Parser;
 use nom::branch::alt;
 use nom::bytes::streaming::{tag, take_until};
 use nom::{self, IResult};
@@ -33,8 +34,8 @@ fn parse_simple(i: &[u8]) -> IResult<&[u8], Resp> {
 }
 
 fn parse_resp(i: &[u8]) -> IResult<&[u8], Resp> {
-    // alt((parse_simple, parse_integer))(i)
-    parse_simple(i).or_else(|_| parse_integer(i))
+    alt((parse_simple, parse_integer)).parse(i)
+    // parse_simple(i).or_else(|_| parse_integer(i))
 }
 
 #[cfg(test)]
@@ -42,14 +43,16 @@ mod tests {
     use super::*;
     use crate::Resp;
 
+    #[test]
     fn test_parse_resp() {
         // Int
         let (_, result) = parse_resp(":42\r\n".as_bytes()).unwrap();
         assert_eq!(result, Resp::Int(42));
 
         // Simple String
-        let simple_sample = "+Some String\r\n";
-        let (_, result) = parse_resp(simple_sample.as_bytes()).unwrap();
+        let simple_sample = "Some String";
+        let (_, result) =
+            parse_resp(format!("{}{}{}", "+", simple_sample, "\r\n").as_bytes()).unwrap();
         assert_eq!(result, Resp::Simple(simple_sample.into()));
     }
 

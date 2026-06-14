@@ -33,8 +33,15 @@ fn parse_simple(i: &[u8]) -> IResult<&[u8], Resp> {
     Ok((i, Resp::Simple(String::from_utf8_lossy(s).into())))
 }
 
+fn parse_error(i: &[u8]) -> IResult<&[u8], Resp> {
+    let (i, _) = tag("-")(i)?;
+    let (i, s) = take_until("\r\n")(i)?;
+    let (i, _) = crlf(i)?;
+    Ok((i, Resp::Simple(String::from_utf8_lossy(s).into())))
+}
+
 fn parse_resp(i: &[u8]) -> IResult<&[u8], Resp> {
-    alt((parse_simple, parse_integer)).parse(i)
+    alt((parse_simple, parse_integer, parse_error)).parse(i)
     // parse_simple(i).or_else(|_| parse_integer(i))
 }
 
@@ -54,6 +61,12 @@ mod tests {
         let (_, result) =
             parse_resp(format!("{}{}{}", "+", simple_sample, "\r\n").as_bytes()).unwrap();
         assert_eq!(result, Resp::Simple(simple_sample.into()));
+
+        // Error
+        let error_sample = "All is broken";
+        let (_, result) =
+            parse_resp(format!("{}{}{}", "-", error_sample, "\r\n").as_bytes()).unwrap();
+        assert_eq!(result, Resp::Simple(error_sample.into()));
     }
 
     #[test]

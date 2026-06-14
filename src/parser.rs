@@ -45,7 +45,7 @@ fn parse_error(i: &[u8]) -> IResult<&[u8], Resp> {
     let (i, _) = tag("-")(i)?;
     let (i, s) = take_until("\r\n")(i)?;
     let (i, _) = crlf(i)?;
-    Ok((i, Resp::String(String::from_utf8_lossy(s).into())))
+    Ok((i, Resp::Error(String::from_utf8_lossy(s).into())))
 }
 
 fn parse_resp(i: &[u8]) -> IResult<&[u8], Resp> {
@@ -76,9 +76,8 @@ mod tests {
 
         // Error
         let error_sample = "All is broken";
-        let (_, result) =
-            parse_resp(format!("{}{}{}", "-", error_sample, "\r\n").as_bytes()).unwrap();
-        assert_eq!(result, Resp::String(error_sample.into()));
+        let (_, result) = parse_resp(format!("-{}\r\n", error_sample).as_bytes()).unwrap();
+        assert_eq!(result, Resp::Error(error_sample.into()));
     }
 
     #[test]

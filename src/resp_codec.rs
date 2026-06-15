@@ -40,8 +40,9 @@ impl Encoder<Resp> for RespCodec {
 
     fn encode(&mut self, resp: Resp, dst: &mut bytes::BytesMut) -> Result<(), Self::Error> {
         let payload = match resp {
-            Resp::Simple(s) => "something",
-            _ => "else",
+            Resp::Simple(s) => format!("+{}\r\n", s),
+            Resp::BulkString(s) => format!("${}\r\n{}\r\n", s.len(), s),
+            _ => "else".into(),
         };
         dst.put_slice(payload.as_bytes());
         Ok(())

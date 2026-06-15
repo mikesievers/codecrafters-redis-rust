@@ -44,11 +44,11 @@ async fn main() -> Result<()> {
     }
 }
 
-async fn handle_stream(mut stream: TcpStream) -> Result<()> {
+async fn handle_stream(stream: TcpStream) -> Result<()> {
     // let mut writer = stream.try_clone()?;
     // let reader = BufReader::new(&stream);
 
-    let (raw_reader, mut raw_writer) = stream.into_split();
+    let (raw_reader, raw_writer) = stream.into_split();
 
     let mut reader = FramedRead::new(raw_reader, RespCodec {});
     let mut writer = FramedWrite::new(raw_writer, RespCodec {});

@@ -6,9 +6,8 @@ This is an implementation of the ["Build Your Own Redis" Challenge](https://code
 The following sources have been useful in the project
 
 # Next steps
-- Implement RESP parsers on top of BytsMut
-  - Test driven
-  - Use nom to parse
+- Implement RESP parsers on top of BytesMut
+  - Implement remaining cases
 - Implement the tokio Decoder trait for this parser
 
 ## RESP protocol parsing

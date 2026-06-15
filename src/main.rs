@@ -4,15 +4,17 @@ use tokio::net::{TcpListener, TcpStream};
 use anyhow::Result;
 
 mod parser;
+mod resp_codec;
 
 #[derive(Debug, PartialEq)]
 enum Resp {
     String(String),
     Error(String),
     Int(i64),
-    Array(Vec<Resp>),
-    NullArray,
-    NullBulkString,
+    // TODO: Implement parser for remaining types
+    // Array(Vec<Resp>),
+    // NullArray,
+    // NullBulkString,
 }
 
 #[tokio::main]

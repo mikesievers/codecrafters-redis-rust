@@ -48,7 +48,7 @@ fn parse_error(i: &[u8]) -> IResult<&[u8], Resp> {
     Ok((i, Resp::Error(String::from_utf8_lossy(s).into())))
 }
 
-fn parse_resp(i: &[u8]) -> IResult<&[u8], Resp> {
+pub fn parse_resp(i: &[u8]) -> IResult<&[u8], Resp> {
     alt((parse_simple, parse_bulk_string, parse_integer, parse_error)).parse(i)
 }
 

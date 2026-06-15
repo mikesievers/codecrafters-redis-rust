@@ -1,8 +1,8 @@
 use crate::parser::parse_resp;
-use bytes::Buf;
+use bytes::{Buf, BufMut};
 use nom::AsBytes;
 use std::io;
-use tokio_util::codec::Decoder;
+use tokio_util::codec::{Decoder, Encoder};
 
 use crate::Resp;
 
@@ -35,6 +35,19 @@ impl Decoder for RespCodec {
     }
 }
 
+impl Encoder<Resp> for RespCodec {
+    type Error = io::Error;
+
+    fn encode(&mut self, resp: Resp, dst: &mut bytes::BytesMut) -> Result<(), Self::Error> {
+        let payload = match resp {
+            Resp::Simple(s) => "something",
+            _ => "else",
+        };
+        dst.put_slice(payload.as_bytes());
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -46,7 +59,7 @@ mod tests {
         let mut codec = RespCodec {};
         let result = codec.decode(&mut src);
 
-        assert_eq!(result.unwrap(), Some(Resp::String("hey".into())));
+        assert_eq!(result.unwrap(), Some(Resp::BulkString("hey".into())));
     }
 
     #[test]

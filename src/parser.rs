@@ -30,7 +30,7 @@ fn parse_simple(i: &[u8]) -> IResult<&[u8], Resp> {
     let (i, _) = tag("+")(i)?;
     let (i, s) = take_until("\r\n")(i)?;
     let (i, _) = crlf(i)?;
-    Ok((i, Resp::String(String::from_utf8_lossy(s).into())))
+    Ok((i, Resp::Simple(String::from_utf8_lossy(s).into())))
 }
 
 fn parse_bulk_string(i: &[u8]) -> IResult<&[u8], Resp> {
@@ -38,7 +38,7 @@ fn parse_bulk_string(i: &[u8]) -> IResult<&[u8], Resp> {
     let (i, n) = parse_number(i)?;
     let (i, s) = take(n as usize)(i)?;
     let (i, _) = crlf(i)?;
-    Ok((i, Resp::String(String::from_utf8_lossy(s).into())))
+    Ok((i, Resp::BulkString(String::from_utf8_lossy(s).into())))
 }
 
 fn parse_error(i: &[u8]) -> IResult<&[u8], Resp> {
@@ -66,13 +66,13 @@ mod tests {
         // Simple String
         let simple_sample = "Some String";
         let (_, result) = parse_resp(format!("+{}\r\n", simple_sample).as_bytes()).unwrap();
-        assert_eq!(result, Resp::String(simple_sample.into()));
+        assert_eq!(result, Resp::Simple(simple_sample.into()));
 
         // Bulk String
         let (_, result) =
             parse_resp(format!("${}\r\n{}\r\n", simple_sample.len(), simple_sample).as_bytes())
                 .unwrap();
-        assert_eq!(result, Resp::String(simple_sample.into()));
+        assert_eq!(result, Resp::BulkString(simple_sample.into()));
 
         // Error
         let error_sample = "All is broken";

@@ -2,8 +2,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 use anyhow::Result;
-use futures_util::StreamExt;
-use tokio_util::codec::FramedRead;
+use futures_util::{SinkExt, StreamExt};
+use tokio_util::codec::{FramedRead, FramedWrite};
 
 mod parser;
 mod resp_codec;
@@ -12,7 +12,8 @@ use resp_codec::RespCodec;
 
 #[derive(Debug, PartialEq)]
 pub enum Resp {
-    String(String),
+    Simple(String),
+    BulkString(String),
     Error(String),
     Int(i64),
     // TODO: Implement parser for remaining types
@@ -47,31 +48,25 @@ async fn handle_stream(mut stream: TcpStream) -> Result<()> {
     // let mut writer = stream.try_clone()?;
     // let reader = BufReader::new(&stream);
 
-    let mut reader = FramedRead::new(stream, RespCodec {});
-    // let mut buf = [0; 2048];
+    let (raw_reader, mut raw_writer) = stream.into_split();
+
+    let mut reader = FramedRead::new(raw_reader, RespCodec {});
+    let mut writer = FramedWrite::new(raw_writer, RespCodec {});
 
     while let Some(frame) = reader.next().await {
         match frame {
-            Ok(resp) => println!("Found: {:?}", resp),
+            Ok(resp) => {
+                println!("Found: {:?}", resp);
+                writer.send(Resp::Simple("PONG".into())).await?;
+            }
             Err(e) => {
                 eprintln!("Could not decode {:?}", e);
-                break;
+                return Err(e.into());
             }
         }
     }
 
-    // TODO: Improve by using a parser combinator like nom.
-    // Article for inspiration: https://dpbriggs.ca/blog/Implementing-A-Copyless-Redis-Protocol-in-Rust-With-Parsing-Combinators/
-    // let bytes_read = stream.read(&mut buf).await?;
-
-    // if bytes_read == 0 {
-    //     println!("Connection closed by client");
-    //     break;
-    // }
-
-    // if &buf[..bytes_read] == b"*1\r\n$4\r\nPING\r\n" {
-    //     stream.write_all("+PONG\r\n".as_bytes()).await?;
-    // }
+    println!("Connection closed by client");
 
     Ok(())
 }

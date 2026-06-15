@@ -2,12 +2,16 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 use anyhow::Result;
+use futures_util::StreamExt;
+use tokio_util::codec::FramedRead;
 
 mod parser;
 mod resp_codec;
 
+use resp_codec::RespCodec;
+
 #[derive(Debug, PartialEq)]
-enum Resp {
+pub enum Resp {
     String(String),
     Error(String),
     Int(i64),
@@ -43,22 +47,31 @@ async fn handle_stream(mut stream: TcpStream) -> Result<()> {
     // let mut writer = stream.try_clone()?;
     // let reader = BufReader::new(&stream);
 
-    loop {
-        let mut buf = [0; 2048];
+    let mut reader = FramedRead::new(stream, RespCodec {});
+    // let mut buf = [0; 2048];
 
-        // TODO: Improve by using a parser combinator like nom.
-        // Article for inspiration: https://dpbriggs.ca/blog/Implementing-A-Copyless-Redis-Protocol-in-Rust-With-Parsing-Combinators/
-        let bytes_read = stream.read(&mut buf).await?;
-
-        if bytes_read == 0 {
-            println!("Connection closed by client");
-            break;
-        }
-
-        if &buf[..bytes_read] == b"*1\r\n$4\r\nPING\r\n" {
-            stream.write_all("+PONG\r\n".as_bytes()).await?;
+    while let Some(frame) = reader.next().await {
+        match frame {
+            Ok(resp) => println!("Found: {:?}", resp),
+            Err(e) => {
+                eprintln!("Could not decode {:?}", e);
+                break;
+            }
         }
     }
+
+    // TODO: Improve by using a parser combinator like nom.
+    // Article for inspiration: https://dpbriggs.ca/blog/Implementing-A-Copyless-Redis-Protocol-in-Rust-With-Parsing-Combinators/
+    // let bytes_read = stream.read(&mut buf).await?;
+
+    // if bytes_read == 0 {
+    //     println!("Connection closed by client");
+    //     break;
+    // }
+
+    // if &buf[..bytes_read] == b"*1\r\n$4\r\nPING\r\n" {
+    //     stream.write_all("+PONG\r\n".as_bytes()).await?;
+    // }
 
     Ok(())
 }

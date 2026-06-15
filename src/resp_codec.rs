@@ -1,5 +1,4 @@
 use crate::parser::parse_resp;
-use assert_matches::assert_matches;
 use bytes::Buf;
 use nom::AsBytes;
 use std::io;
@@ -7,7 +6,7 @@ use tokio_util::codec::Decoder;
 
 use crate::Resp;
 
-struct RespCodec {}
+pub struct RespCodec {}
 
 impl Decoder for RespCodec {
     type Item = Resp;
@@ -39,6 +38,7 @@ impl Decoder for RespCodec {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert_matches::assert_matches;
 
     #[test]
     fn test_decode_happy() {

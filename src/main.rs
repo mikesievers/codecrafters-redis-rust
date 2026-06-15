@@ -1,4 +1,3 @@
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 use anyhow::Result;
@@ -17,9 +16,9 @@ pub enum Resp {
     Error(String),
     Int(i64),
     // TODO: Implement parser for remaining types
-    // Array(Vec<Resp>),
-    // NullArray,
-    // NullBulkString,
+    Array(Vec<Resp>),
+    NullArray,
+    NullBulkString,
 }
 
 #[tokio::main]

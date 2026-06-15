@@ -20,17 +20,15 @@ impl Decoder for RespCodec {
             // and return the parsed struct
             Ok((rest, resp)) => {
                 src.advance(buf_len - rest.len());
-                return Ok(Some(resp));
+                Ok(Some(resp))
             }
             // Nom has determined that data is not sufficient to parse a complete frame
             Err(nom::Err::Incomplete(_)) => Ok(None),
             // Catchall - data does not match any configured parser
-            Err(_) => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Could not parse frame",
-                ));
-            }
+            Err(_) => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Could not parse frame",
+            )),
         }
     }
 }
@@ -42,6 +40,8 @@ impl Encoder<Resp> for RespCodec {
         let payload = match resp {
             Resp::Simple(s) => format!("+{}\r\n", s),
             Resp::BulkString(s) => format!("${}\r\n{}\r\n", s.len(), s),
+            Resp::Error(s) => format!("-{}\r\n", s),
+            Resp::Int(i) => format!(":{}\r\n", i),
             _ => "else".into(),
         };
         dst.put_slice(payload.as_bytes());

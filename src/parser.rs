@@ -41,6 +41,21 @@ fn parse_bulk_string(i: &[u8]) -> IResult<&[u8], Resp> {
     Ok((i, Resp::BulkString(String::from_utf8_lossy(s).into())))
 }
 
+fn parse_array(i: &[u8]) -> IResult<&[u8], Resp> {
+    let (i, _) = tag("*")(i)?;
+    let (i, n) = parse_number(i)?;
+    // An array has been found, parse the individual Resps
+    // And store them in an array
+    let mut v = Vec::with_capacity(n as usize);
+    let mut i = i;
+    for _ in 0..n {
+        let (next_i, resp) = parse_resp(i)?;
+        v.push(resp);
+        i = next_i;
+    }
+    Ok((i, Resp::Array(v)))
+}
+
 fn parse_error(i: &[u8]) -> IResult<&[u8], Resp> {
     let (i, _) = tag("-")(i)?;
     let (i, s) = take_until("\r\n")(i)?;
@@ -49,7 +64,14 @@ fn parse_error(i: &[u8]) -> IResult<&[u8], Resp> {
 }
 
 pub fn parse_resp(i: &[u8]) -> IResult<&[u8], Resp> {
-    alt((parse_simple, parse_bulk_string, parse_integer, parse_error)).parse(i)
+    alt((
+        parse_simple,
+        parse_bulk_string,
+        parse_integer,
+        parse_error,
+        parse_array,
+    ))
+    .parse(i)
 }
 
 #[cfg(test)]
@@ -78,6 +100,18 @@ mod tests {
         let error_sample = "All is broken";
         let (_, result) = parse_resp(format!("-{}\r\n", error_sample).as_bytes()).unwrap();
         assert_eq!(result, Resp::Error(error_sample.into()));
+    }
+
+    #[test]
+    fn test_parse_resp_array() {
+        let (_, result) = parse_resp("*2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n".as_bytes()).unwrap();
+        assert_eq!(
+            result,
+            Resp::Array(vec![
+                Resp::BulkString("ECHO".into()),
+                Resp::BulkString("hey".into())
+            ])
+        );
     }
 
     #[test]

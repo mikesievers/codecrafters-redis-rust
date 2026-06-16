@@ -6,7 +6,7 @@ This is an implementation of the ["Build Your Own Redis" Challenge](https://code
 The following sources have been useful in the project
 
 # Next steps
-- Implement remaining cases for encoder/decoder
+- Implement array encoder/decoder
 - Implement ECHO
 
 ## RESP protocol parsing

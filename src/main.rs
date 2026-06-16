@@ -15,10 +15,9 @@ pub enum Resp {
     BulkString(String),
     Error(String),
     Int(i64),
-    // TODO: Implement parser for remaining types
     Array(Vec<Resp>),
-    NullArray,
-    NullBulkString,
+    //NullArray,
+    // NullBulkString,
 }
 
 #[tokio::main]

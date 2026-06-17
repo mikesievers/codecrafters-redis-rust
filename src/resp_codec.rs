@@ -1,5 +1,6 @@
 use crate::parser::parse_resp;
 use bytes::{Buf, BufMut};
+use itertools::Itertools;
 use nom::AsBytes;
 use std::io;
 use tokio_util::codec::{Decoder, Encoder};
@@ -37,15 +38,32 @@ impl Encoder<Resp> for RespCodec {
     type Error = io::Error;
 
     fn encode(&mut self, resp: Resp, dst: &mut bytes::BytesMut) -> Result<(), Self::Error> {
-        let payload = match resp {
+        let payload = self._encode_resp(&resp);
+        dst.put_slice(payload.as_bytes());
+        Ok(())
+    }
+}
+
+impl RespCodec {
+    // NOTE: There is a lot of Strings being used here. An optimization
+    // possibility is to prevent the extra heap allocations and append to the
+    // BytesMut dst buffer instead
+    fn _encode_resp(&self, resp: &Resp) -> String {
+        match resp {
             Resp::Simple(s) => format!("+{}\r\n", s),
             Resp::BulkString(s) => format!("${}\r\n{}\r\n", s.len(), s),
             Resp::Error(s) => format!("-{}\r\n", s),
             Resp::Int(i) => format!(":{}\r\n", i),
-            _ => "else".into(),
-        };
-        dst.put_slice(payload.as_bytes());
-        Ok(())
+            Resp::Array(resps) => format!(
+                "*{}\r\n{}",
+                resps.len(),
+                resps
+                    .iter()
+                    .map(|r| self._encode_resp(r))
+                    .collect_vec()
+                    .join("")
+            ),
+        }
     }
 }
 
@@ -79,5 +97,13 @@ mod tests {
         let result = codec.decode(&mut src);
 
         assert_matches!(result, Err(_));
+    }
+
+    #[test]
+    fn test_encode_array() {
+        let resp = Resp::Array(vec![Resp::Simple("The answer is".into()), Resp::Int(64)]);
+        let codec = RespCodec {};
+        let encoded = codec._encode_resp(&resp);
+        assert_eq!(encoded, "*2\r\n+The answer is\r\n:64\r\n");
     }
 }

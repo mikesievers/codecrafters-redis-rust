@@ -55,7 +55,7 @@ async fn handle_stream(mut stream: TcpStream) -> Result<()> {
         match frame {
             Ok(resp) => {
                 println!("Found: {:?}", resp);
-                writer.send(Resp::Simple("PONG".into())).await?;
+                writer.send(handle_command()).await?;
             }
             Err(e) => {
                 eprintln!("Could not decode {:?}", e);
@@ -67,4 +67,8 @@ async fn handle_stream(mut stream: TcpStream) -> Result<()> {
     println!("Connection closed by client");
 
     Ok(())
+}
+
+fn handle_command() -> Resp {
+    Resp::Simple("PONG".into())
 }

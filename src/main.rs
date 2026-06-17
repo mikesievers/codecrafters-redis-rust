@@ -9,7 +9,7 @@ mod resp_codec;
 
 use resp_codec::RespCodec;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Resp {
     Simple(String),
     BulkString(String),
@@ -55,7 +55,7 @@ async fn handle_stream(mut stream: TcpStream) -> Result<()> {
         match frame {
             Ok(resp) => {
                 println!("Found: {:?}", resp);
-                writer.send(handle_command()).await?;
+                writer.send(handle_command(resp)).await?;
             }
             Err(e) => {
                 eprintln!("Could not decode {:?}", e);
@@ -69,6 +69,28 @@ async fn handle_stream(mut stream: TcpStream) -> Result<()> {
     Ok(())
 }
 
-fn handle_command() -> Resp {
-    Resp::Simple("PONG".into())
+fn handle_command(resp: Resp) -> Resp {
+    match resp {
+        Resp::Simple(_) => Resp::Error("Can't handle Simple (yet)".into()),
+        Resp::BulkString(_) => Resp::Error("Can't handle BulkString (yet)".into()),
+        Resp::Error(_) => Resp::Error("Can't handle Error (yet)".into()),
+        Resp::Int(_) => Resp::Error("Can't handle Int (yet)".into()),
+        // Commands should arrive as arrays
+        Resp::Array(a) if a.len() == 0 => Resp::Error("Can't handle empty arrays (yet)".into()),
+        Resp::Array(resps) => {
+            if let Some((command, args)) = resps.split_first() {
+                match command {
+                    Resp::BulkString(s) if s.to_uppercase() == "PING" => {
+                        Resp::Simple("PONG".into())
+                    }
+                    Resp::BulkString(s) if s.to_uppercase() == "ECHO" => {
+                        args.first().cloned().unwrap_or(Resp::Simple("".into()))
+                    }
+                    _ => todo!(),
+                }
+            } else {
+                Resp::Error("Don't know how to handle that array".into())
+            }
+        }
+    }
 }

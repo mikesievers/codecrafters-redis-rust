@@ -6,7 +6,7 @@ This is an implementation of the ["Build Your Own Redis" Challenge](https://code
 The following sources have been useful in the project
 
 # Next steps
-- Implement ECHO
+- Implement GET/SET
 
 ## RESP protocol parsing
 - Redis protocol spec: https://redis.io/docs/latest/develop/reference/protocol-spec/

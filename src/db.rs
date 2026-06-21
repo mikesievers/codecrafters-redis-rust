@@ -5,8 +5,8 @@ use std::{
 };
 
 pub trait Db {
-    fn set(&mut self, key: &String, value: &String) -> Result<(), Error>;
-    fn get(&mut self, key: &String) -> Option<String>;
+    fn set(&mut self, key: &str, value: &str) -> Result<(), Error>;
+    fn get(&mut self, key: &str) -> Option<String>;
 }
 
 #[derive(Clone)]
@@ -22,15 +22,15 @@ impl MemoryDb {
 }
 
 impl Db for MemoryDb {
-    fn set(&mut self, key: &String, value: &String) -> Result<(), Error> {
+    fn set(&mut self, key: &str, value: &str) -> Result<(), Error> {
         {
             let mut data = self.data.lock().unwrap();
-            data.insert(key.clone(), value.clone());
+            data.insert(key.to_string(), value.to_string());
         }
         Ok(())
     }
 
-    fn get(&mut self, key: &String) -> Option<String> {
+    fn get(&mut self, key: &str) -> Option<String> {
         {
             let data = self.data.lock().unwrap();
             data.get(key).cloned()

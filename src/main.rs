@@ -75,13 +75,6 @@ async fn handle_stream<T: Db + Clone>(db: T, mut stream: TcpStream) -> Result<()
 
 fn handle_command<T: Db>(db: T, resp: Resp) -> Resp {
     match resp {
-        Resp::Simple(_) => Resp::Error("Can't handle Simple (yet)".into()),
-        Resp::BulkString(_) => Resp::Error("Can't handle BulkString (yet)".into()),
-        Resp::NullBulkString => Resp::Error("Can't handle NullBulkString (yet)".into()),
-        Resp::Error(_) => Resp::Error("Can't handle Error (yet)".into()),
-        Resp::Int(_) => Resp::Error("Can't handle Int (yet)".into()),
-        // Commands should arrive as arrays
-        Resp::Array(a) if a.len() == 0 => Resp::Error("Can't handle empty arrays (yet)".into()),
         Resp::Array(resps) => {
             if let Some((command, args)) = resps.split_first() {
                 match command {
@@ -89,11 +82,12 @@ fn handle_command<T: Db>(db: T, resp: Resp) -> Resp {
                     Resp::BulkString(s) if s.to_uppercase() == "ECHO" => cmd_echo(args),
                     Resp::BulkString(s) if s.to_uppercase() == "SET" => cmd_set(db, args),
                     Resp::BulkString(s) if s.to_uppercase() == "GET" => cmd_get(db, args),
-                    _ => todo!(),
+                    _ => Resp::Error("Command not implemented".into()),
                 }
             } else {
                 Resp::Error("Don't know how to handle that array".into())
             }
         }
+        _ => Resp::Error("Commands must be Arrays of BulkStrings".into()),
     }
 }

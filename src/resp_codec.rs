@@ -52,7 +52,7 @@ impl RespCodec {
         match resp {
             Resp::Simple(s) => format!("+{}\r\n", s),
             Resp::BulkString(s) => format!("${}\r\n{}\r\n", s.len(), s),
-            Resp::NullBulkString => format!("$-1\r\n"),
+            Resp::NullBulkString => "$-1\r\n".to_string(),
             Resp::Error(s) => format!("-{}\r\n", s),
             Resp::Int(i) => format!(":{}\r\n", i),
             Resp::Array(resps) => format!(

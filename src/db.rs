@@ -1,19 +1,16 @@
 use std::{
     collections::HashMap,
+    io::Error,
     sync::{Arc, Mutex},
 };
 
-#[derive(Debug, PartialEq)]
-pub enum DbError {
-    // InternalError,
-}
-
 pub trait Db {
-    fn set(&mut self, key: &String, value: &String) -> Result<(), DbError>;
+    fn set(&mut self, key: &String, value: &String) -> Result<(), Error>;
     fn get(&mut self, key: &String) -> Option<String>;
 }
 
-struct MemoryDb {
+#[derive(Clone)]
+pub struct MemoryDb {
     data: Arc<Mutex<HashMap<String, String>>>,
 }
 
@@ -25,7 +22,7 @@ impl MemoryDb {
 }
 
 impl Db for MemoryDb {
-    fn set(&mut self, key: &String, value: &String) -> Result<(), DbError> {
+    fn set(&mut self, key: &String, value: &String) -> Result<(), Error> {
         {
             let mut data = self.data.lock().unwrap();
             data.insert(key.clone(), value.clone());

@@ -5,12 +5,14 @@ use futures_util::{SinkExt, StreamExt};
 use tokio_util::codec::{FramedRead, FramedWrite};
 
 mod command;
+mod db;
 mod parser;
 mod resp_codec;
-mod db;
 
 use command::*;
 use resp_codec::RespCodec;
+
+use crate::db::Db;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Resp {
@@ -29,6 +31,8 @@ async fn main() -> Result<()> {
 
     let listener = TcpListener::bind("127.0.0.1:6379").await?;
 
+    let db = db::MemoryDb::new();
+
     loop {
         let stream = listener.accept().await;
 
@@ -36,7 +40,7 @@ async fn main() -> Result<()> {
             Ok((stream, _)) => {
                 println!("accepted new connection");
 
-                tokio::spawn(handle_stream(stream));
+                tokio::spawn(handle_stream(db.clone(), stream));
             }
             Err(e) => {
                 println!("error: {}", e);
@@ -45,7 +49,7 @@ async fn main() -> Result<()> {
     }
 }
 
-async fn handle_stream(mut stream: TcpStream) -> Result<()> {
+async fn handle_stream<T: Db + Clone>(db: T, mut stream: TcpStream) -> Result<()> {
     // let mut writer = stream.try_clone()?;
     // let reader = BufReader::new(&stream);
 
@@ -58,7 +62,7 @@ async fn handle_stream(mut stream: TcpStream) -> Result<()> {
         match frame {
             Ok(resp) => {
                 println!("Found: {:?}", resp);
-                writer.send(handle_command(resp)).await?;
+                writer.send(handle_command(db.clone(), resp)).await?;
             }
             Err(e) => {
                 eprintln!("Could not decode {:?}", e);
@@ -72,7 +76,7 @@ async fn handle_stream(mut stream: TcpStream) -> Result<()> {
     Ok(())
 }
 
-fn handle_command(resp: Resp) -> Resp {
+fn handle_command<T: Db>(db: T, resp: Resp) -> Resp {
     match resp {
         Resp::Simple(_) => Resp::Error("Can't handle Simple (yet)".into()),
         Resp::BulkString(_) => Resp::Error("Can't handle BulkString (yet)".into()),
@@ -85,6 +89,8 @@ fn handle_command(resp: Resp) -> Resp {
                 match command {
                     Resp::BulkString(s) if s.to_uppercase() == "PING" => cmd_ping(),
                     Resp::BulkString(s) if s.to_uppercase() == "ECHO" => cmd_echo(args),
+                    Resp::BulkString(s) if s.to_uppercase() == "SET" => cmd_set(db, args),
+                    Resp::BulkString(s) if s.to_uppercase() == "GET" => cmd_set(db, args),
                     _ => todo!(),
                 }
             } else {

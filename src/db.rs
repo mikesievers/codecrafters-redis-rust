@@ -1,20 +1,27 @@
 use std::collections::HashMap;
 
-struct Db {
+pub trait Db {
+    fn set(&mut self, key: &String, value: &String) -> ();
+    fn get(&mut self, key: &String) -> Option<String>;
+}
+
+struct MemoryDb {
     data: HashMap<String, String>,
 }
 
-impl Db {
+impl MemoryDb {
     pub fn new() -> Self {
         let data = HashMap::new();
-        Db { data }
+        MemoryDb { data }
     }
+}
 
-    pub fn set(&mut self, key: &String, value: &String) -> () {
+impl Db for MemoryDb {
+    fn set(&mut self, key: &String, value: &String) -> () {
         self.data.insert(key.clone(), value.clone());
     }
 
-    pub fn get(&mut self, key: &String) -> Option<String> {
+    fn get(&mut self, key: &String) -> Option<String> {
         self.data.get(key).cloned()
     }
 }
@@ -25,7 +32,7 @@ mod tests {
 
     #[test]
     fn test_get_set() {
-        let mut db = Db::new();
+        let mut db = MemoryDb::new();
         let key = "Key1".to_string();
         let value = "Value1".to_string();
         db.set(&key, &value);

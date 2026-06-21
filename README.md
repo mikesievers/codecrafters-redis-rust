@@ -11,7 +11,8 @@ The following sources have been useful in the project
 
 # Next steps
 
-- Implement GET/SET
+- Implement SET parameters
+  - Maybe use a parser
 
 ## RESP protocol parsing
 

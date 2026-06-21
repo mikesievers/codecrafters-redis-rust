@@ -4,9 +4,11 @@ use anyhow::Result;
 use futures_util::{SinkExt, StreamExt};
 use tokio_util::codec::{FramedRead, FramedWrite};
 
+mod command;
 mod parser;
 mod resp_codec;
 
+use command::*;
 use resp_codec::RespCodec;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -80,12 +82,8 @@ fn handle_command(resp: Resp) -> Resp {
         Resp::Array(resps) => {
             if let Some((command, args)) = resps.split_first() {
                 match command {
-                    Resp::BulkString(s) if s.to_uppercase() == "PING" => {
-                        Resp::Simple("PONG".into())
-                    }
-                    Resp::BulkString(s) if s.to_uppercase() == "ECHO" => {
-                        args.first().cloned().unwrap_or(Resp::Simple("".into()))
-                    }
+                    Resp::BulkString(s) if s.to_uppercase() == "PING" => cmd_ping(),
+                    Resp::BulkString(s) if s.to_uppercase() == "ECHO" => cmd_echo(args),
                     _ => todo!(),
                 }
             } else {

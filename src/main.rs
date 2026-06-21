@@ -50,9 +50,6 @@ async fn main() -> Result<()> {
 }
 
 async fn handle_stream<T: Db + Clone>(db: T, mut stream: TcpStream) -> Result<()> {
-    // let mut writer = stream.try_clone()?;
-    // let reader = BufReader::new(&stream);
-
     let (raw_reader, raw_writer) = stream.split();
 
     let mut reader = FramedRead::new(raw_reader, RespCodec {});

@@ -7,6 +7,7 @@ use tokio_util::codec::{FramedRead, FramedWrite};
 mod command;
 mod parser;
 mod resp_codec;
+mod db;
 
 use command::*;
 use resp_codec::RespCodec;

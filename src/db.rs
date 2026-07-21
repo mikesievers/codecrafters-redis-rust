@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     io::Error,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
 };
 
 pub trait Db {
@@ -11,12 +11,12 @@ pub trait Db {
 
 #[derive(Clone)]
 pub struct MemoryDb {
-    data: Arc<Mutex<HashMap<String, String>>>,
+    data: Arc<RwLock<HashMap<String, String>>>,
 }
 
 impl MemoryDb {
     pub fn new() -> Self {
-        let data = Arc::new(Mutex::new(HashMap::new()));
+        let data = Arc::new(RwLock::new(HashMap::new()));
         MemoryDb { data }
     }
 }
@@ -24,7 +24,7 @@ impl MemoryDb {
 impl Db for MemoryDb {
     fn set(&mut self, key: &str, value: &str) -> Result<(), Error> {
         {
-            let mut data = self.data.lock().unwrap();
+            let mut data = self.data.write().unwrap();
             data.insert(key.to_string(), value.to_string());
         }
         Ok(())
@@ -32,7 +32,7 @@ impl Db for MemoryDb {
 
     fn get(&mut self, key: &str) -> Option<String> {
         {
-            let data = self.data.lock().unwrap();
+            let data = self.data.read().unwrap();
             data.get(key).cloned()
         }
     }

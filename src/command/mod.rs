@@ -4,4 +4,6 @@ pub mod cmd_ping;
 
 pub use cmd_echo::cmd_echo;
 pub use cmd_get_set::{cmd_get, cmd_set};
+pub use cmd_ping::Command;
+pub use cmd_ping::CommandPing;
 pub use cmd_ping::cmd_ping;

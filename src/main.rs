@@ -78,7 +78,10 @@ fn handle_command<T: Db>(db: T, resp: Resp) -> Resp {
         Resp::Array(resps) => {
             if let Some((command, args)) = resps.split_first() {
                 match command {
-                    Resp::BulkString(s) if s.to_uppercase() == "PING" => cmd_ping(),
+                    Resp::BulkString(s) if s.to_uppercase() == "PING" => {
+                        let ping = CommandPing {};
+                        ping.execute(&db, &None)
+                    }
                     Resp::BulkString(s) if s.to_uppercase() == "ECHO" => cmd_echo(args),
                     Resp::BulkString(s) if s.to_uppercase() == "SET" => cmd_set(db, args),
                     Resp::BulkString(s) if s.to_uppercase() == "GET" => cmd_get(db, args),

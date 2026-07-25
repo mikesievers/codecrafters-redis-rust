@@ -1,22 +1,30 @@
-use crate::{Resp, db::Db};
+use crate::{Resp, command::Command, db::Db};
 
-pub fn cmd_set<T: Db>(db: &T, args: &[Resp]) -> Resp {
-    match args {
-        [Resp::BulkString(key), Resp::BulkString(val)] => match db.set(key, val) {
-            Ok(_) => Resp::Simple("OK".into()),
-            Err(_) => Resp::Error("Could not set value".into()),
-        },
-        _ => Resp::Error("Wrong arguments for set".into()),
+pub struct CommandSet {}
+
+impl Command for CommandSet {
+    fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
+        match args {
+            [Resp::BulkString(key), Resp::BulkString(val)] => match db.set(key, val) {
+                Ok(_) => Resp::Simple("OK".into()),
+                Err(_) => Resp::Error("Could not set value".into()),
+            },
+            _ => Resp::Error("Wrong arguments for set".into()),
+        }
     }
 }
 
-pub fn cmd_get<T: Db>(db: &T, args: &[Resp]) -> Resp {
-    match args {
-        [Resp::BulkString(key)] => match db.get(key) {
-            Some(s) => Resp::BulkString(s),
-            None => Resp::NullBulkString,
-        },
-        _ => Resp::Error("Wrong arguments for get".into()),
+pub struct CommandGet {}
+
+impl Command for CommandGet {
+    fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
+        match args {
+            [Resp::BulkString(key)] => match db.get(key) {
+                Some(s) => Resp::BulkString(s),
+                None => Resp::NullBulkString,
+            },
+            _ => Resp::Error("Wrong arguments for get".into()),
+        }
     }
 }
 
@@ -32,9 +40,11 @@ mod tests {
         let value = Resp::BulkString("value".into());
         let args = vec![key.clone(), value.clone()];
 
-        let _ = cmd_set(&db, &args);
+        let command_set = CommandSet {};
+        let _ = command_set.execute(&db, &args);
 
-        let result = cmd_get(&db, &vec![key]);
+        let command_get = CommandGet {};
+        let result = command_get.execute(&db, &vec![key]);
         assert_eq!(result, value);
     }
 }

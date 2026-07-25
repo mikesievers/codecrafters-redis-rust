@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
 
     let listener = TcpListener::bind("127.0.0.1:6379").await?;
     let db = db::MemoryDb::new();
-    let commands = CommandRegistry::new();
+    let command_registry = CommandRegistry::new();
 
     loop {
         let stream = listener.accept().await;
@@ -40,7 +40,7 @@ async fn main() -> Result<()> {
             Ok((stream, _)) => {
                 println!("accepted new connection");
 
-                tokio::spawn(handle_stream(db.clone(), commands.clone(), stream));
+                tokio::spawn(handle_stream(db.clone(), command_registry.clone(), stream));
             }
             Err(e) => {
                 println!("error: {}", e);
@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
 
 async fn handle_stream<T: Db + Clone>(
     db: T,
-    commands: CommandRegistry,
+    command_registry: CommandRegistry,
     mut stream: TcpStream,
 ) -> Result<()> {
     let (raw_reader, raw_writer) = stream.split();
@@ -63,7 +63,9 @@ async fn handle_stream<T: Db + Clone>(
         match frame {
             Ok(resp) => {
                 println!("Found: {:?}", resp);
-                writer.send(handle_command(&db, resp)).await?;
+                writer
+                    .send(handle_command(&db, &command_registry, resp))
+                    .await?;
             }
             Err(e) => {
                 eprintln!("Could not decode {:?}", e);
@@ -77,19 +79,21 @@ async fn handle_stream<T: Db + Clone>(
     Ok(())
 }
 
-fn handle_command<T: Db>(db: &T, resp: Resp) -> Resp {
+fn handle_command<T: Db>(db: &T, command_registry: &CommandRegistry, resp: Resp) -> Resp {
     match resp {
         Resp::Array(resps) => {
-            if let Some((command, args)) = resps.split_first() {
-                match command {
-                    Resp::BulkString(s) if s.to_uppercase() == "PING" => {
-                        let ping = CommandPing {};
-                        ping.execute(db, &None)
+            if let Some((cmd_part, args)) = resps.split_first() {
+                // The first element of the Resp Vec must be a BulkString..
+                if let Resp::BulkString(cmd_name) = cmd_part {
+                    // ... and, uppercased, ...
+                    let cmd_upper = cmd_name.to_uppercase();
+                    // ... must be a known command
+                    match command_registry.commands.get(cmd_upper.as_str()) {
+                        Some(command) => command.execute(db, &args),
+                        None => Resp::Error("Command not implemented".into()),
                     }
-                    Resp::BulkString(s) if s.to_uppercase() == "ECHO" => cmd_echo(args),
-                    Resp::BulkString(s) if s.to_uppercase() == "SET" => cmd_set(db, args),
-                    Resp::BulkString(s) if s.to_uppercase() == "GET" => cmd_get(db, args),
-                    _ => Resp::Error("Command not implemented".into()),
+                } else {
+                    Resp::Error("First element must be a BulkString".into())
                 }
             } else {
                 Resp::Error("Don't know how to handle that array".into())

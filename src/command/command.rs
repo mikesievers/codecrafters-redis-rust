@@ -1,14 +1,40 @@
-use crate::{Resp, db::Db};
+use std::{collections::HashMap, sync::Arc};
 
-pub trait Command<DB: Db> {
-    fn execute(&self, db: &DB, args: &Option<Resp>) -> Resp;
+use crate::{
+    Resp,
+    command::{CommandEcho, CommandGet, CommandPing, CommandSet},
+    db::Db,
+};
+
+pub trait Command {
+    fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp;
 }
 
 #[derive(Clone)]
-pub struct CommandRegistry {}
+pub struct CommandRegistry {
+    pub commands: Arc<HashMap<&'static str, Box<dyn Command + Send + Sync>>>,
+}
 
 impl CommandRegistry {
     pub fn new() -> Self {
-        CommandRegistry {}
+        let commands = Arc::new(HashMap::from([
+            (
+                "PING",
+                Box::new(CommandPing {}) as Box<dyn Command + Send + Sync>,
+            ),
+            (
+                "ECHO",
+                Box::new(CommandEcho {}) as Box<dyn Command + Send + Sync>,
+            ),
+            (
+                "SET",
+                Box::new(CommandSet {}) as Box<dyn Command + Send + Sync>,
+            ),
+            (
+                "GET",
+                Box::new(CommandGet {}) as Box<dyn Command + Send + Sync>,
+            ),
+        ]));
+        CommandRegistry { commands }
     }
 }

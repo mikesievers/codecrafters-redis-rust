@@ -1,14 +1,21 @@
-use crate::{Resp, command::Command, db::Db};
+use crate::{
+    Resp,
+    command::Command,
+    db::{Db, DbEntry},
+};
 
 pub struct CommandSet {}
 
 impl Command for CommandSet {
     fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
         match args {
-            [Resp::BulkString(key), Resp::BulkString(val)] => match db.set(key, val) {
-                Ok(_) => Resp::Simple("OK".into()),
-                Err(_) => Resp::Error("Could not set value".into()),
-            },
+            [Resp::BulkString(key), Resp::BulkString(val)] => {
+                let entry = DbEntry { value: val.clone() };
+                match db.set(key, &entry) {
+                    Ok(_) => Resp::Simple("OK".into()),
+                    Err(_) => Resp::Error("Could not set value".into()),
+                }
+            }
             _ => Resp::Error("Wrong arguments for set".into()),
         }
     }
@@ -20,7 +27,7 @@ impl Command for CommandGet {
     fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
         match args {
             [Resp::BulkString(key)] => match db.get(key) {
-                Some(s) => Resp::BulkString(s),
+                Some(entry) => Resp::BulkString(entry.value),
                 None => Resp::NullBulkString,
             },
             _ => Resp::Error("Wrong arguments for get".into()),

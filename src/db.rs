@@ -5,13 +5,18 @@ use std::{
 };
 
 pub trait Db {
-    fn set(&self, key: &str, value: &str) -> Result<(), Error>;
-    fn get(&self, key: &str) -> Option<String>;
+    fn set(&self, key: &str, value: &DbEntry) -> Result<(), Error>;
+    fn get(&self, key: &str) -> Option<DbEntry>;
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct DbEntry {
+    pub value: String,
 }
 
 #[derive(Clone)]
 pub struct MemoryDb {
-    data: Arc<RwLock<HashMap<String, String>>>,
+    data: Arc<RwLock<HashMap<String, DbEntry>>>,
 }
 
 impl MemoryDb {
@@ -22,15 +27,15 @@ impl MemoryDb {
 }
 
 impl Db for MemoryDb {
-    fn set(&self, key: &str, value: &str) -> Result<(), Error> {
+    fn set(&self, key: &str, value: &DbEntry) -> Result<(), Error> {
         {
             let mut data = self.data.write().unwrap();
-            data.insert(key.to_string(), value.to_string());
+            data.insert(key.to_string(), value.clone());
         }
         Ok(())
     }
 
-    fn get(&self, key: &str) -> Option<String> {
+    fn get(&self, key: &str) -> Option<DbEntry> {
         {
             let data = self.data.read().unwrap();
             data.get(key).cloned()
@@ -46,15 +51,21 @@ mod tests {
     fn test_get_set() {
         let db = MemoryDb::new();
         let key = "Key1".to_string();
-        let value = "Value1".to_string();
-        let value2 = "Value2".to_string();
+
+        let entry1 = DbEntry {
+            value: "Value1".into(),
+        };
+
+        let entry2 = DbEntry {
+            value: "Value2".into(),
+        };
 
         // Set and get a value
-        db.set(&key, &value).unwrap();
-        assert_eq!(db.get(&key), Some(value));
+        db.set(&key, &entry1).unwrap();
+        assert_eq!(db.get(&key), Some(entry1));
 
         // Overwrite a value
-        db.set(&key, &value2).unwrap();
-        assert_eq!(db.get(&key), Some(value2));
+        db.set(&key, &entry2).unwrap();
+        assert_eq!(db.get(&key), Some(entry2));
     }
 }

@@ -1,6 +1,6 @@
 use crate::{Resp, db::Db};
 
-pub fn cmd_set<T: Db>(mut db: T, args: &[Resp]) -> Resp {
+pub fn cmd_set<T: Db>(db: &T, args: &[Resp]) -> Resp {
     match args {
         [Resp::BulkString(key), Resp::BulkString(val)] => match db.set(key, val) {
             Ok(_) => Resp::Simple("OK".into()),
@@ -10,7 +10,7 @@ pub fn cmd_set<T: Db>(mut db: T, args: &[Resp]) -> Resp {
     }
 }
 
-pub fn cmd_get<T: Db>(mut db: T, args: &[Resp]) -> Resp {
+pub fn cmd_get<T: Db>(db: &T, args: &[Resp]) -> Resp {
     match args {
         [Resp::BulkString(key)] => match db.get(key) {
             Some(s) => Resp::BulkString(s),
@@ -32,9 +32,9 @@ mod tests {
         let value = Resp::BulkString("value".into());
         let args = vec![key.clone(), value.clone()];
 
-        let _ = cmd_set(db.clone(), &args);
+        let _ = cmd_set(&db, &args);
 
-        let result = cmd_get(db, &vec![key]);
+        let result = cmd_get(&db, &vec![key]);
         assert_eq!(result, value);
     }
 }

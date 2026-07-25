@@ -30,8 +30,8 @@ async fn main() -> Result<()> {
     println!("Starting sort-of Redis.");
 
     let listener = TcpListener::bind("127.0.0.1:6379").await?;
-
     let db = db::MemoryDb::new();
+    let commands = CommandRegistry::new();
 
     loop {
         let stream = listener.accept().await;
@@ -40,7 +40,7 @@ async fn main() -> Result<()> {
             Ok((stream, _)) => {
                 println!("accepted new connection");
 
-                tokio::spawn(handle_stream(db.clone(), stream));
+                tokio::spawn(handle_stream(db.clone(), commands.clone(), stream));
             }
             Err(e) => {
                 println!("error: {}", e);
@@ -49,7 +49,11 @@ async fn main() -> Result<()> {
     }
 }
 
-async fn handle_stream<T: Db + Clone>(db: T, mut stream: TcpStream) -> Result<()> {
+async fn handle_stream<T: Db + Clone>(
+    db: T,
+    commands: CommandRegistry,
+    mut stream: TcpStream,
+) -> Result<()> {
     let (raw_reader, raw_writer) = stream.split();
 
     let mut reader = FramedRead::new(raw_reader, RespCodec {});
@@ -59,7 +63,7 @@ async fn handle_stream<T: Db + Clone>(db: T, mut stream: TcpStream) -> Result<()
         match frame {
             Ok(resp) => {
                 println!("Found: {:?}", resp);
-                writer.send(handle_command(db.clone(), resp)).await?;
+                writer.send(handle_command(&db, resp)).await?;
             }
             Err(e) => {
                 eprintln!("Could not decode {:?}", e);
@@ -73,14 +77,14 @@ async fn handle_stream<T: Db + Clone>(db: T, mut stream: TcpStream) -> Result<()
     Ok(())
 }
 
-fn handle_command<T: Db>(db: T, resp: Resp) -> Resp {
+fn handle_command<T: Db>(db: &T, resp: Resp) -> Resp {
     match resp {
         Resp::Array(resps) => {
             if let Some((command, args)) = resps.split_first() {
                 match command {
                     Resp::BulkString(s) if s.to_uppercase() == "PING" => {
                         let ping = CommandPing {};
-                        ping.execute(&db, &None)
+                        ping.execute(db, &None)
                     }
                     Resp::BulkString(s) if s.to_uppercase() == "ECHO" => cmd_echo(args),
                     Resp::BulkString(s) if s.to_uppercase() == "SET" => cmd_set(db, args),

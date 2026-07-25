@@ -1,12 +1,4 @@
-use crate::{Resp, db::Db};
-
-pub fn cmd_ping() -> Resp {
-    Resp::Simple("PONG".into())
-}
-
-pub trait Command<DB: Db> {
-    fn execute(&self, db: &DB, args: &Option<Resp>) -> Resp;
-}
+use crate::{Resp, command::Command, db::Db};
 
 pub struct CommandPing {}
 

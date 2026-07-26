@@ -12,6 +12,16 @@ pub trait Db {
 #[derive(Clone, PartialEq, Debug)]
 pub struct DbEntry {
     pub value: String,
+    pub px: Option<u64>,
+}
+
+impl DbEntry {
+    pub fn new(value: &String) -> Self {
+        DbEntry {
+            value: value.clone(),
+            px: None,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -52,13 +62,9 @@ mod tests {
         let db = MemoryDb::new();
         let key = "Key1".to_string();
 
-        let entry1 = DbEntry {
-            value: "Value1".into(),
-        };
+        let entry1 = DbEntry::new(&"Value1".into());
 
-        let entry2 = DbEntry {
-            value: "Value2".into(),
-        };
+        let entry2 = DbEntry::new(&"Value2".into());
 
         // Set and get a value
         db.set(&key, &entry1).unwrap();

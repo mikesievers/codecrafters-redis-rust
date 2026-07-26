@@ -9,15 +9,11 @@ pub struct CommandRpush {}
 impl Command for CommandRpush {
     fn execute(&self, db: &dyn Db, args: &[crate::Resp]) -> Resp {
         // Identify the (new) items for the list
-        let key;
-        let new_elements;
-        match parse_list_items(args) {
-            Ok((arg_key, arg_elements)) => {
-                key = arg_key;
-                new_elements = arg_elements;
-            }
+        let (key, new_elements) = match parse_list_items(args) {
+            Ok((arg_key, arg_elements)) => (arg_key, arg_elements),
             Err(s) => return Resp::Error(s),
-        }
+        };
+
         // If an existing entry exists, modify that one
         // Or create a new one
         match db.get(key) {

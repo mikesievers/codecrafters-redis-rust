@@ -67,9 +67,24 @@ impl Db for MemoryDb {
     }
 
     fn get(&self, key: &str) -> Option<DbEntry> {
+        let entry_opt;
+
+        // Retrieve the entry, if any, from the Db
         {
             let data = self.data.read().unwrap();
-            data.get(key).cloned()
+            entry_opt = data.get(key).cloned();
+        }
+
+        // If the entry is expired, remove it from the Db
+        match entry_opt {
+            Some(entry) => match entry.is_expired() {
+                false => Some(entry),
+                true => {
+                    self.data.write().unwrap().remove(key);
+                    None
+                }
+            },
+            None => None,
         }
     }
 }

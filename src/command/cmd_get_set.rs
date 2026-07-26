@@ -100,9 +100,9 @@ mod tests {
             Ok((key, parsed_entry)) => {
                 assert_eq!(key, "k");
                 assert_eq!(parsed_entry.value, "vAlue");
-                // assert_eq!(parsed_entry.px, 10);
+                assert_eq!(parsed_entry.px, Some(10));
             }
-            Err(s) => panic!("Could not parse arguments for SET"),
+            Err(_s) => panic!("Could not parse arguments for SET"),
         }
     }
 

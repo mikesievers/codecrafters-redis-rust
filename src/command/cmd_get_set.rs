@@ -28,7 +28,9 @@ fn parse_get_args(args: &[Resp]) -> Result<(&String, DbEntry), String> {
     }
 
     let (key, mut entry) = match (&args[0], &args[1]) {
-        (Resp::BulkString(k), Resp::BulkString(v)) => (k, DbEntry::new(&v)),
+        (Resp::BulkString(k), Resp::BulkString(v)) => {
+            (k, DbEntry::new(RedisType::String(v.clone())))
+        }
         _ => {
             return Err("Key and value must exist and be strings".into());
         }

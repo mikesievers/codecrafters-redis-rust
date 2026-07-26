@@ -24,13 +24,13 @@ pub struct DbEntry {
 }
 
 impl DbEntry {
-    pub fn new(value: &String) -> Self {
+    pub fn new(value: RedisType) -> Self {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("We seem to be before 1970-01-01")
             .as_millis() as u64;
         DbEntry {
-            value: RedisType::String(value.clone()),
+            value,
             px: None,
             created_at: now,
         }
@@ -106,9 +106,9 @@ mod tests {
         let db = MemoryDb::new();
         let key = "Key1".to_string();
 
-        let entry1 = DbEntry::new(&"Value1".into());
+        let entry1 = DbEntry::new(RedisType::String("Value1".into()));
 
-        let entry2 = DbEntry::new(&"Value2".into());
+        let entry2 = DbEntry::new(RedisType::String("Value2".into()));
 
         // Set and get a value
         db.set(&key, &entry1).unwrap();
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_is_expired() {
-        let mut entry = DbEntry::new(&"Val".into());
+        let mut entry = DbEntry::new(RedisType::String("Val".into()));
         // no PX set
         assert_eq!(entry.is_expired(), false);
 

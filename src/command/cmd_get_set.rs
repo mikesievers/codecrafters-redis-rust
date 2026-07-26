@@ -1,7 +1,7 @@
 use crate::{
     Resp,
     command::Command,
-    db::{Db, DbEntry},
+    db::{Db, DbEntry, RedisType},
 };
 
 // SET
@@ -74,7 +74,10 @@ impl Command for CommandGet {
     fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
         match args {
             [Resp::BulkString(key)] => match db.get(key) {
-                Some(entry) => Resp::BulkString(entry.value),
+                Some(entry) => match entry.value {
+                    RedisType::String(s) => Resp::BulkString(s.clone()),
+                    _ => Resp::Error("The key belongs to a non-BulkString value".into()),
+                },
                 None => Resp::NullBulkString,
             },
             _ => Resp::Error("Wrong arguments for get".into()),
@@ -85,7 +88,7 @@ impl Command for CommandGet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::MemoryDb;
+    use crate::db::{MemoryDb, RedisType};
 
     #[test]
     fn test_parse_get_params() {
@@ -99,7 +102,7 @@ mod tests {
         match parse_get_args(&args_set_with_px) {
             Ok((key, parsed_entry)) => {
                 assert_eq!(key, "k");
-                assert_eq!(parsed_entry.value, "vAlue");
+                assert_eq!(parsed_entry.value, RedisType::String("vAlue".into()));
                 assert_eq!(parsed_entry.px, Some(10));
             }
             Err(_s) => panic!("Could not parse arguments for SET"),

@@ -11,8 +11,14 @@ pub trait Db {
 }
 
 #[derive(Clone, PartialEq, Debug)]
+pub enum RedisType {
+    String(String),
+    List(Vec<String>),
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct DbEntry {
-    pub value: String,
+    pub value: RedisType,
     pub px: Option<u64>,
     pub created_at: u64,
 }
@@ -24,7 +30,7 @@ impl DbEntry {
             .expect("We seem to be before 1970-01-01")
             .as_millis() as u64;
         DbEntry {
-            value: value.clone(),
+            value: RedisType::String(value.clone()),
             px: None,
             created_at: now,
         }

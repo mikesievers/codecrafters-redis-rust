@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     io::Error,
     sync::{Arc, RwLock},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 pub trait Db {
@@ -13,13 +14,33 @@ pub trait Db {
 pub struct DbEntry {
     pub value: String,
     pub px: Option<u64>,
+    pub created_at: u64,
 }
 
 impl DbEntry {
     pub fn new(value: &String) -> Self {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("We seem to be before 1970-01-01")
+            .as_millis() as u64;
         DbEntry {
             value: value.clone(),
             px: None,
+            created_at: now,
+        }
+    }
+
+    pub fn is_expired(&self) -> bool {
+        // Is now later than px milliseconds after the creation time?
+        match self.px {
+            Some(px) => {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("We seem to be before 1970-01-01")
+                    .as_millis() as u64;
+                now > self.created_at + px
+            }
+            None => false,
         }
     }
 }
@@ -55,6 +76,8 @@ impl Db for MemoryDb {
 
 #[cfg(test)]
 mod tests {
+    use std::{thread, time::Duration};
+
     use super::*;
 
     #[test]
@@ -73,5 +96,22 @@ mod tests {
         // Overwrite a value
         db.set(&key, &entry2).unwrap();
         assert_eq!(db.get(&key), Some(entry2));
+    }
+
+    #[test]
+    fn test_is_expired() {
+        let mut entry = DbEntry::new(&"Val".into());
+        // no PX set
+        assert_eq!(entry.is_expired(), false);
+
+        // 10s in the future, the entry should  not be expired yet
+        entry.px = Some(10_000);
+        assert_eq!(entry.is_expired(), false);
+
+        // Let the entry expire immediately
+        entry.px = Some(0);
+        // after 2 milliseconds, it should be expired
+        thread::sleep(Duration::from_millis(2));
+        assert_eq!(entry.is_expired(), true);
     }
 }

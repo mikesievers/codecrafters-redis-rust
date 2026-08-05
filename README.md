@@ -11,8 +11,7 @@ The following sources have been useful in the project
 
 # Next steps
 
-- Implement SET parameters
-  - Maybe use a parser
+- Implement LRANGE
 
 ## RESP protocol parsing
 

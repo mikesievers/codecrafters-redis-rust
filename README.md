@@ -11,7 +11,7 @@ The following sources have been useful in the project
 
 # Next steps
 
-- Implement LRANGE
+- Implement LRANGE (negative indices)
 
 ## RESP protocol parsing
 

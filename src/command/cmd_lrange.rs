@@ -41,27 +41,39 @@ impl Command for CommandLrange {
 fn extract_and_return_values(items: Vec<String>, start: &i64, end: &i64) -> Resp {
     // Guard clauses
     // Ensure 0-length arrays do not lead to errors below
+    let empty_array = Resp::Array(vec![]);
     if items.len() == 0 {
-        return Resp::Array(vec![]);
+        return empty_array;
     }
 
-    // Start must be positive
-    if *start < 0 {
-        return Resp::Array(vec![]);
+    let items_len = items.len() as i64;
+
+    let slice_start = match *start {
+        // negative
+        // and bigger than the length of items
+        s if s < -items_len => 0,
+        s if s >= -items_len && s < 0 => items_len + s,
+        s if s > items_len => return empty_array,
+        // By default, return as is
+        s => s - 1,
     };
+
+    let slice_end = match *end {
+        // negative
+        // and bigger than the length of items
+        s if s < -items_len => 0,
+        s if s >= -items_len && s < 0 => items_len + s,
+        s if s > items_len => items_len - 1,
+        // By default, return as is
+        s => s - 1,
+    };
+
     // The slice index must be before the end
-    if *end < *start {
-        return Resp::Array(vec![]);
+    if slice_end < slice_start {
+        return empty_array;
     }
-    // Check if start is not bigger then the length of the items
-    if (items.len() as i64) - 1 < *start {
-        return Resp::Array(vec![]);
-    };
 
-    let slice_start = *start as usize;
-    let slice_end = (*end as usize + 1).min(items.len());
-
-    let slice = &items[slice_start..slice_end];
+    let slice = &items[(slice_start as usize)..=(slice_end as usize)];
 
     Resp::Array(slice.iter().map(|s| Resp::BulkString(s.clone())).collect())
 }

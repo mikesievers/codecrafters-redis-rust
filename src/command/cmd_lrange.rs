@@ -42,7 +42,7 @@ fn extract_and_return_values(items: Vec<String>, start: &i64, end: &i64) -> Resp
     // Guard clauses
     // Ensure 0-length arrays do not lead to errors below
     let empty_array = Resp::Array(vec![]);
-    if items.len() == 0 {
+    if items.is_empty() {
         return empty_array;
     }
 
@@ -51,7 +51,7 @@ fn extract_and_return_values(items: Vec<String>, start: &i64, end: &i64) -> Resp
     let slice_start = match *start {
         // negative
         // and bigger than the length of items
-        s if s < -items_len => 0,
+        s if s < -items_len || s == 0 => 0,
         s if s >= -items_len && s < 0 => items_len + s,
         s if s > items_len => return empty_array,
         // By default, return as is
@@ -61,7 +61,7 @@ fn extract_and_return_values(items: Vec<String>, start: &i64, end: &i64) -> Resp
     let slice_end = match *end {
         // negative
         // and bigger than the length of items
-        s if s < -items_len => 0,
+        s if s < -items_len || s == 0 => 0,
         s if s >= -items_len && s < 0 => items_len + s,
         s if s > items_len => items_len - 1,
         // By default, return as is

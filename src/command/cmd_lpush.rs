@@ -21,7 +21,7 @@ impl Command for CommandLpush {
         // Or create a new one
         match db.get(key) {
             Some(existing_entry) => match existing_entry.value {
-                RedisType::List(mut existing_vec) => {
+                RedisType::List(existing_vec) => {
                     new_elements.extend(existing_vec);
                     let nr_entries = new_elements.len() as i64;
                     let entry = DbEntry::new(RedisType::List(new_elements));

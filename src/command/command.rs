@@ -3,7 +3,8 @@ use std::{collections::HashMap, sync::Arc};
 use crate::{
     Resp,
     command::{
-        CommandEcho, CommandGet, CommandLpush, CommandLrange, CommandPing, CommandRpush, CommandSet,
+        CommandEcho, CommandGet, CommandLlen, CommandLpush, CommandLrange, CommandPing,
+        CommandRpush, CommandSet,
     },
     db::Db,
 };
@@ -43,6 +44,10 @@ impl CommandRegistry {
             (
                 "LPUSH",
                 Box::new(CommandLpush {}) as Box<dyn Command + Send + Sync>,
+            ),
+            (
+                "LLEN",
+                Box::new(CommandLlen {}) as Box<dyn Command + Send + Sync>,
             ),
             (
                 "LRANGE",

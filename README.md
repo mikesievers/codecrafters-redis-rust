@@ -11,15 +11,7 @@ The following sources have been useful in the project
 
 # Next steps
 
-- Implement LRANGE (negative indices)
-
-- Fix error on
-  remote: [tester::#RI1] [client] $ redis-cli RPUSH pineapple grape blueberry pineapple apple
-  remote: [your_program] accepted new connection
-  remote: [your_program] Found: Array([BulkString("RPUSH"), BulkString("pineapple"), BulkString("grape"), BulkString("blueberry"), BulkString("pineapple"), BulkString("apple")])
-  remote: [tester::#RI1] [client] ✔︎ Received 4
-  remote: [tester::#RI1] [client] > LRANGE pineapple 0 -2
-  remote: [your_program]
+- Implement LPOP (multiple values)
 
 ## RESP protocol parsing
 

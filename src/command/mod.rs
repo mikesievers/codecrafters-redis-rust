@@ -1,17 +1,19 @@
 pub mod cmd_echo;
 pub mod cmd_get_set;
+pub mod cmd_llen;
+pub mod cmd_lpop;
 pub mod cmd_lpush;
 pub mod cmd_lrange;
 pub mod cmd_ping;
 pub mod cmd_rpush;
-pub mod cmd_llen;
 pub mod command;
 
 pub use cmd_echo::CommandEcho;
 pub use cmd_get_set::{CommandGet, CommandSet};
+pub use cmd_llen::CommandLlen;
+pub use cmd_lpop::CommandLpop;
 pub use cmd_lpush::CommandLpush;
 pub use cmd_lrange::CommandLrange;
 pub use cmd_ping::CommandPing;
 pub use cmd_rpush::CommandRpush;
-pub use cmd_llen::CommandLlen;
 pub use command::{Command, CommandRegistry};

@@ -88,6 +88,7 @@ impl Db for MemoryDb {
                 match &value.value {
                     RedisType::List(items) if items.is_empty() => {
                         data.remove(key);
+                        return Ok(());
                     }
                     _ => {
                         data.insert(key.to_string(), value.clone());
@@ -100,6 +101,7 @@ impl Db for MemoryDb {
                 if let Some(waiter_q) = waiter_map.get_mut(&key.to_string()) {
                     while let Some(tx) = waiter_q.pop_front() {
                         if tx.send(value.clone()).is_ok() {
+                            println!("Woke up waiter");
                             break;
                         }
                     }

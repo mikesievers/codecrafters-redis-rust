@@ -1,3 +1,5 @@
+use async_trait::async_trait;
+
 use crate::{
     Resp,
     command::Command,
@@ -6,8 +8,9 @@ use crate::{
 
 pub struct CommandLpush {}
 
+#[async_trait]
 impl Command for CommandLpush {
-    fn execute(&self, db: &dyn Db, args: &[crate::Resp]) -> Resp {
+    async fn execute(&self, db: &dyn Db, args: &[crate::Resp]) -> Resp {
         // Identify the (new) items for the list
         let (key, mut new_elements) = match parse_list_items(args) {
             Ok((arg_key, arg_elements)) => (arg_key, arg_elements),

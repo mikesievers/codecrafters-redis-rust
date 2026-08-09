@@ -1,3 +1,5 @@
+use async_trait::async_trait;
+
 use crate::{
     Resp,
     command::Command,
@@ -7,8 +9,9 @@ use crate::{
 // SET
 pub struct CommandSet {}
 
+#[async_trait]
 impl Command for CommandSet {
-    fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
+    async fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
         match parse_get_args(args) {
             Ok((key, entry)) => match db.set(key, &entry) {
                 Ok(_) => Resp::Simple("OK".into()),
@@ -72,8 +75,9 @@ fn parse_get_args(args: &[Resp]) -> Result<(&String, DbEntry), String> {
 // GET
 pub struct CommandGet {}
 
+#[async_trait]
 impl Command for CommandGet {
-    fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
+    async fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
         match args {
             [Resp::BulkString(key)] => match db.get(key) {
                 Some(entry) => match entry.value {
@@ -111,18 +115,18 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_get_set() {
+    #[tokio::test]
+    async fn test_get_set() {
         let db = MemoryDb::new();
         let key = Resp::BulkString("key".into());
         let value = Resp::BulkString("value".into());
         let args = vec![key.clone(), value.clone()];
 
         let command_set = CommandSet {};
-        let _ = command_set.execute(&db, &args);
+        let _ = command_set.execute(&db, &args).await;
 
         let command_get = CommandGet {};
-        let result = command_get.execute(&db, &vec![key]);
+        let result = command_get.execute(&db, &vec![key]).await;
         assert_eq!(result, value);
     }
 }

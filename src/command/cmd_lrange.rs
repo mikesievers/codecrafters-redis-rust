@@ -1,3 +1,5 @@
+use async_trait::async_trait;
+
 use crate::Resp;
 use crate::command::Command;
 use crate::db::Db;
@@ -12,8 +14,9 @@ struct LrangeArgs {
     end: i64,
 }
 
+#[async_trait]
 impl Command for CommandLrange {
-    fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
+    async fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
         match parse_lrange_args(args) {
             Ok(lrange_args) => {
                 match db.get(&lrange_args.key) {

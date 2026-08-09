@@ -1,13 +1,21 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     io::Error,
-    sync::{Arc, RwLock},
-    time::{SystemTime, UNIX_EPOCH},
+    sync::{Arc, Mutex, RwLock},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-pub trait Db {
+use async_trait::async_trait;
+use tokio::{
+    sync::oneshot::{self, Sender},
+    time::timeout,
+};
+
+#[async_trait]
+pub trait Db: Send + Sync {
     fn set(&self, key: &str, value: &DbEntry) -> Result<(), Error>;
     fn get(&self, key: &str) -> Option<DbEntry>;
+    async fn get_blocking(&self, key: &str, timeout_secs: Option<f64>) -> Option<DbEntry>;
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -54,20 +62,43 @@ impl DbEntry {
 #[derive(Clone)]
 pub struct MemoryDb {
     data: Arc<RwLock<HashMap<String, DbEntry>>>,
+    waiters: Arc<Mutex<HashMap<String, VecDeque<Sender<DbEntry>>>>>,
 }
 
 impl MemoryDb {
     pub fn new() -> Self {
         let data = Arc::new(RwLock::new(HashMap::new()));
-        MemoryDb { data }
+        let waiters = Arc::new(Mutex::new(HashMap::new()));
+        MemoryDb { data, waiters }
     }
 }
 
+#[async_trait]
 impl Db for MemoryDb {
     fn set(&self, key: &str, value: &DbEntry) -> Result<(), Error> {
+        // Always expect potential waiters and lock the waiters structure when writing
         {
-            let mut data = self.data.write().unwrap();
-            data.insert(key.to_string(), value.clone());
+            let mut waiter_map = self.waiters.lock().unwrap();
+
+            {
+                let mut data = self.data.write().unwrap();
+                data.insert(key.to_string(), value.clone());
+            }
+
+            // Notify waiters, if any
+            {
+                if let Some(waiter_q) = waiter_map.get_mut(&key.to_string()) {
+                    while let Some(tx) = waiter_q.pop_front() {
+                        if tx.send(value.clone()).is_ok() {
+                            break;
+                        }
+                    }
+                    // Remove waiter list if empty
+                    if waiter_q.is_empty() {
+                        waiter_map.remove(key);
+                    }
+                }
+            }
         }
         Ok(())
     }
@@ -91,6 +122,37 @@ impl Db for MemoryDb {
                 }
             },
             None => None,
+        }
+    }
+
+    async fn get_blocking(&self, key: &str, timeout_secs: Option<f64>) -> Option<DbEntry> {
+        // Get an entry, possibly blocking until it exists
+
+        // Prepare a one-shot channel for the waiter
+        let (tx, rx) = oneshot::channel();
+
+        // First, get a lock on the waiters to atomically check for an element, return it or
+        // start waiting on the key
+        {
+            let mut map = self.waiters.lock().unwrap();
+
+            if let Some(entry) = self.get(key) {
+                return Some(entry);
+            }
+
+            // No entry was found, add a waiter into the table
+            map.entry(key.into()).or_default().push_back(tx);
+        }
+        // Wait for the result and return it
+        // Wait "forever" is interpreted as many seconds
+        match timeout(
+            Duration::from_millis((timeout_secs.unwrap_or(1_000_000.0) * 1_000.0) as u64),
+            rx,
+        )
+        .await
+        {
+            Ok(Ok(entry)) => Some(entry),
+            _ => None,
         }
     }
 }

@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use itertools::Itertools;
 
 use crate::{
     Resp::{self},
@@ -7,10 +6,10 @@ use crate::{
     db::{Db, RedisType},
 };
 
-pub struct CommandLpop {}
+pub struct CommandBlpop {}
 
 #[async_trait]
-impl Command for CommandLpop {
+impl Command for CommandBlpop {
     async fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
         let mut arg_iter = args.iter();
 
@@ -20,13 +19,13 @@ impl Command for CommandLpop {
             _ => return Resp::NullBulkString,
         };
 
-        let nr_elements = match arg_iter.next() {
-            Some(Resp::BulkString(s)) => s.parse::<usize>().ok(),
+        let timeout_secs = match arg_iter.next() {
+            Some(Resp::BulkString(s)) => s.parse::<f64>().ok(),
             _ => None,
         };
 
         // Retrieve DB entry and extract list
-        let mut db_entry = match db.get(&key) {
+        let mut db_entry = match db.get_blocking(&key, timeout_secs).await {
             Some(entry) => entry,
             None => return Resp::NullBulkString,
         };
@@ -41,14 +40,7 @@ impl Command for CommandLpop {
         };
 
         // We have a list and can remove elements
-        let result_resp = match nr_elements {
-            None => Resp::BulkString(list.remove(0)),
-            Some(nr_elements) => Resp::Array(
-                list.drain(..nr_elements.min(list.len()))
-                    .map(|s| Resp::BulkString(s))
-                    .collect_vec(),
-            ),
-        };
+        let result_resp = Resp::BulkString(list.remove(0));
 
         // Finally, write the modified list and return the result
         db_entry.value = RedisType::List(list);

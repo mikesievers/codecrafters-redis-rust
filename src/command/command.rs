@@ -1,16 +1,19 @@
 use std::{collections::HashMap, sync::Arc};
 
+use async_trait::async_trait;
+
 use crate::{
     Resp,
     command::{
-        CommandEcho, CommandGet, CommandLlen, CommandLpop, CommandLpush, CommandLrange,
-        CommandPing, CommandRpush, CommandSet,
+        CommandBlpop, CommandEcho, CommandGet, CommandLlen, CommandLpop, CommandLpush,
+        CommandLrange, CommandPing, CommandRpush, CommandSet,
     },
     db::Db,
 };
 
+#[async_trait]
 pub trait Command {
-    fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp;
+    async fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp;
 }
 
 #[derive(Clone)]
@@ -48,6 +51,10 @@ impl CommandRegistry {
             (
                 "LLEN",
                 Box::new(CommandLlen {}) as Box<dyn Command + Send + Sync>,
+            ),
+            (
+                "BLPOP",
+                Box::new(CommandBlpop {}) as Box<dyn Command + Send + Sync>,
             ),
             (
                 "LPOP",

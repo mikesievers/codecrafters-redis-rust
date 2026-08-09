@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
     }
 }
 
-async fn handle_stream<T: Db + Clone>(
+async fn handle_stream<T: Db + Clone + Send + Sync + 'static>(
     db: T,
     command_registry: CommandRegistry,
     mut stream: TcpStream,
@@ -64,7 +64,7 @@ async fn handle_stream<T: Db + Clone>(
             Ok(resp) => {
                 println!("Found: {:?}", resp);
                 writer
-                    .send(handle_command(&db, &command_registry, resp))
+                    .send(handle_command(&db, &command_registry, resp).await)
                     .await?;
             }
             Err(e) => {
@@ -79,7 +79,7 @@ async fn handle_stream<T: Db + Clone>(
     Ok(())
 }
 
-fn handle_command<T: Db>(db: &T, command_registry: &CommandRegistry, resp: Resp) -> Resp {
+async fn handle_command(db: &dyn Db, command_registry: &CommandRegistry, resp: Resp) -> Resp {
     match resp {
         Resp::Array(resps) => {
             if let Some((cmd_part, args)) = resps.split_first() {
@@ -89,7 +89,7 @@ fn handle_command<T: Db>(db: &T, command_registry: &CommandRegistry, resp: Resp)
                     let cmd_upper = cmd_name.to_uppercase();
                     // ... must be a known command
                     match command_registry.commands.get(cmd_upper.as_str()) {
-                        Some(command) => command.execute(db, &args),
+                        Some(command) => command.execute(db, &args).await,
                         None => Resp::Error("Command not implemented".into()),
                     }
                 } else {

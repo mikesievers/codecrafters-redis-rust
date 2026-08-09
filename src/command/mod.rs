@@ -1,3 +1,4 @@
+pub mod cmd_blpop;
 pub mod cmd_echo;
 pub mod cmd_get_set;
 pub mod cmd_llen;
@@ -8,6 +9,7 @@ pub mod cmd_ping;
 pub mod cmd_rpush;
 pub mod command;
 
+pub use cmd_blpop::CommandBlpop;
 pub use cmd_echo::CommandEcho;
 pub use cmd_get_set::{CommandGet, CommandSet};
 pub use cmd_llen::CommandLlen;

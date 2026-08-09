@@ -1,3 +1,5 @@
+use async_trait::async_trait;
+
 use crate::{
     Resp,
     command::Command,
@@ -6,8 +8,9 @@ use crate::{
 
 pub struct CommandLlen {}
 
+#[async_trait]
 impl Command for CommandLlen {
-    fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
+    async fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
         args.first()
             .and_then(|arg| match arg {
                 Resp::BulkString(key) => Some(key),

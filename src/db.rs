@@ -80,9 +80,19 @@ impl Db for MemoryDb {
         {
             let mut waiter_map = self.waiters.lock().unwrap();
 
+            // Write data
             {
                 let mut data = self.data.write().unwrap();
-                data.insert(key.to_string(), value.clone());
+                // Special case: Empty array. That removes the key, if it exists
+                // NOTE: This should probably be migrated to a remove/delete functionality
+                match &value.value {
+                    RedisType::List(items) if items.is_empty() => {
+                        data.remove(key);
+                    }
+                    _ => {
+                        data.insert(key.to_string(), value.clone());
+                    }
+                }
             }
 
             // Notify waiters, if any

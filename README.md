@@ -11,7 +11,7 @@ The following sources have been useful in the project
 
 # Next steps
 
-- Implement LPOP (multiple values)
+- Continue as per Website
 
 ## RESP protocol parsing
 

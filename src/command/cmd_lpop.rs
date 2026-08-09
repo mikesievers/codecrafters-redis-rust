@@ -1,5 +1,7 @@
+use itertools::Itertools;
+
 use crate::{
-    Resp,
+    Resp::{self},
     command::Command,
     db::{Db, RedisType},
 };
@@ -8,34 +10,49 @@ pub struct CommandLpop {}
 
 impl Command for CommandLpop {
     fn execute(&self, db: &dyn Db, args: &[Resp]) -> Resp {
-        // This needs to be initilized so that it can be borrowed
-        // in a closure downstream.
-        let mut db_key = "UNINITIALIZED_PLACEHOLDER_IN_LPOP_WAS_USED".into();
+        let mut arg_iter = args.iter();
 
-        args.first()
-            .and_then(|arg| match arg {
-                Resp::BulkString(key) => {
-                    db_key = key.clone();
-                    db.get(key)
-                }
-                _ => None,
-            })
-            .and_then(|mut entry| match entry.value {
-                RedisType::List(mut items) => {
-                    if items.is_empty() {
-                        None
-                    } else {
-                        let first_element = Resp::BulkString(items.remove(0));
-                        entry.value = RedisType::List(items);
-                        // If removing the element from the list and then writing it fails, we will
-                        // just return an empty result. That might not be what is intended.
-                        // If explicit error messages are wanted, change the ok() to a match.
-                        db.set(&db_key, &entry).ok();
-                        Some(first_element)
-                    }
-                }
-                _ => None,
-            })
-            .unwrap_or(Resp::NullBulkString)
+        // Parse arguments
+        let key = match arg_iter.next() {
+            Some(Resp::BulkString(s)) => s.clone(),
+            _ => return Resp::NullBulkString,
+        };
+
+        let nr_elements = match arg_iter.next() {
+            Some(Resp::BulkString(s)) => s.parse::<usize>().ok(),
+            _ => None,
+        };
+
+        // Retrieve DB entry and extract list
+        let mut db_entry = match db.get(&key) {
+            Some(entry) => entry,
+            None => return Resp::NullBulkString,
+        };
+
+        let mut list = match db_entry.value {
+            RedisType::List(list) => list,
+            _ => return Resp::NullBulkString,
+        };
+
+        if list.is_empty() {
+            return Resp::NullBulkString;
+        };
+
+        // We have a list and can remove elements
+        let result_resp = match nr_elements {
+            None => Resp::BulkString(list.remove(0)),
+            Some(nr_elements) => Resp::Array(
+                list.drain(..nr_elements.min(list.len()))
+                    .map(|s| Resp::BulkString(s))
+                    .collect_vec(),
+            ),
+        };
+
+        // Finally, write the modified list and return the result
+        db_entry.value = RedisType::List(list);
+        match db.set(&key, &db_entry) {
+            Ok(_) => result_resp,
+            Err(_) => Resp::Error("Could not write modified list back".into()),
+        }
     }
 }

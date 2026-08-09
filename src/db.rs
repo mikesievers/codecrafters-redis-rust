@@ -145,14 +145,12 @@ impl Db for MemoryDb {
         }
         // Wait for the result and return it
         // Wait "forever" is interpreted as many seconds
-        match timeout(
-            Duration::from_millis((timeout_secs.unwrap_or(1_000_000.0) * 1_000.0) as u64),
-            rx,
-        )
-        .await
-        {
-            Ok(Ok(entry)) => Some(entry),
-            _ => None,
+        match timeout_secs {
+            Some(0.0) | None => rx.await.ok(),
+            Some(s) => match timeout(Duration::from_millis((s * 1_000.0) as u64), rx).await {
+                Ok(Ok(entry)) => Some(entry),
+                _ => None,
+            },
         }
     }
 }

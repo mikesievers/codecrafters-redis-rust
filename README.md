@@ -11,7 +11,7 @@ The following sources have been useful in the project
 
 # Next steps
 
-- Continue as per Website
+- Streams
 
 ## RESP protocol parsing
 

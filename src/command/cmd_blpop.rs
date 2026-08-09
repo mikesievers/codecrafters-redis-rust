@@ -40,7 +40,7 @@ impl Command for CommandBlpop {
         };
 
         // We have a list and can remove elements
-        let result_resp = Resp::BulkString(list.remove(0));
+        let result_resp = Resp::Array(vec![Resp::BulkString(list.remove(0))]);
 
         // Finally, write the modified list and return the result
         db_entry.value = RedisType::List(list);

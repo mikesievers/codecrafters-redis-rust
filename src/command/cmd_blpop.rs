@@ -16,7 +16,7 @@ impl Command for CommandBlpop {
         // Parse arguments
         let key = match arg_iter.next() {
             Some(Resp::BulkString(s)) => s.clone(),
-            _ => return Resp::NullBulkString,
+            _ => return Resp::NullArray,
         };
 
         let timeout_secs = match arg_iter.next() {
@@ -27,16 +27,16 @@ impl Command for CommandBlpop {
         // Retrieve DB entry and extract list
         let mut db_entry = match db.get_blocking(&key, timeout_secs).await {
             Some(entry) => entry,
-            None => return Resp::NullBulkString,
+            None => return Resp::NullArray,
         };
 
         let mut list = match db_entry.value {
             RedisType::List(list) => list,
-            _ => return Resp::NullBulkString,
+            _ => return Resp::NullArray,
         };
 
         if list.is_empty() {
-            return Resp::NullBulkString;
+            return Resp::NullArray;
         };
 
         // We have a list and can remove elements

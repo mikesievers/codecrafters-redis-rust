@@ -11,7 +11,7 @@ The following sources have been useful in the project
 
 # Next steps
 
-- Streams
+- Continue after BLPOP
 
 ## RESP protocol parsing
 

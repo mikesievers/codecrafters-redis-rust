@@ -21,7 +21,7 @@ pub enum Resp {
     Error(String),
     Int(i64),
     Array(Vec<Resp>),
-    //NullArray,
+    NullArray,
     NullBulkString,
 }
 
